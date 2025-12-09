@@ -63,3 +63,25 @@ export async function getNote(date: string) {
   if (error && error.code !== 'PGRST116') throw error
   return data
 }
+
+// Simple substring search (Apple Notes style)
+export async function searchNotes(query: string) {
+  const cookieStore = await cookies()
+  const supabase = createClient(cookieStore)
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  if (!query.trim()) {
+    return await getNotes()
+  }
+
+  const { data, error } = await supabase
+    .rpc('search_notes', {
+      search_query: query,
+      user_uuid: user.id
+    })
+
+  if (error) throw error
+  return data || []
+}

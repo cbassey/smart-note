@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { saveNote, getNotes } from '@/app/actions/notes'
+import { saveNote, getNotes, searchNotes } from '@/app/actions/notes'
 import { MessageCircle } from 'lucide-react'
-import AICompanion from '@/app/components/AICompanion'
+import AICompanion from './AICompanion'
+import SearchBar from './SearchBar'
 
 interface Note {
   id: string
@@ -22,21 +23,69 @@ interface NotesAppProps {
 
 export default function NotesApp({ initialNotes }: NotesAppProps) {
   const [notes, setNotes] = useState<Note[]>(initialNotes)
+  const [filteredNotes, setFilteredNotes] = useState<Note[]>(initialNotes)
   const [currentDate, setCurrentDate] = useState(getTodayDate())
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved')
   const [showAI, setShowAI] = useState(false)
   const [saveTimeout, setSaveTimeoutState] = useState<NodeJS.Timeout | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchMode, setSearchMode] = useState<'none' | 'client' | 'server'>('none')
 
   const isToday = currentDate === getTodayDate()
 
-  // Load note for current date
   useEffect(() => {
     const note = notes.find(n => n.date === currentDate)
     setContent(note?.content || '')
   }, [currentDate, notes])
 
-  // Auto-save
+  // Client-side instant filtering
+  const filterNotesLocally = useCallback((query: string) => {
+    const lowerQuery = query.toLowerCase()
+    return notes.filter(note => 
+      note.content.toLowerCase().includes(lowerQuery) ||
+      note.date.includes(lowerQuery)
+    )
+  }, [notes])
+
+  // Handle search with hybrid approach
+  const handleSearch = useCallback(async (query: string) => {
+    const trimmedQuery = query.trim()
+    
+    if (!trimmedQuery) {
+      handleClearSearch()
+      return
+    }
+
+    // For queries less than 5 characters, use instant client-side filtering
+    if (trimmedQuery.length < 5) {
+      setSearchMode('client')
+      setFilteredNotes(filterNotesLocally(trimmedQuery))
+      return
+    }
+
+    // For longer queries, use server search with loading state
+    setSearchMode('server')
+    setIsSearching(true)
+    
+    try {
+      const results = await searchNotes(trimmedQuery)
+      setFilteredNotes(results)
+    } catch (error) {
+      console.error('Search error:', error)
+      // Fallback to client-side search on error
+      setFilteredNotes(filterNotesLocally(trimmedQuery))
+    } finally {
+      setIsSearching(false)
+    }
+  }, [notes, filterNotesLocally])
+
+  const handleClearSearch = useCallback(() => {
+    setSearchMode('none')
+    setIsSearching(false)
+    setFilteredNotes(notes)
+  }, [notes])
+
   const handleContentChange = (value: string) => {
     setContent(value)
     
@@ -50,9 +99,13 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
         await saveNote(currentDate, value)
         setSaveStatus('saved')
         
-        // Refresh notes list
         const updatedNotes = await getNotes()
         setNotes(updatedNotes)
+        
+        // Update filtered notes only if not actively searching
+        if (searchMode === 'none') {
+          setFilteredNotes(updatedNotes)
+        }
       } catch (error) {
         console.error('Save error:', error)
         setSaveStatus('error')
@@ -73,13 +126,28 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
             Your Notes
           </div>
           
-          <div className="space-y-1">
-            {notes.length === 0 ? (
+          {/* Search Bar */}
+          <div className="mb-4">
+            <SearchBar 
+              onSearch={handleSearch} 
+              onClear={handleClearSearch}
+              isLoading={isSearching}
+            />
+          </div>
+
+          {searchMode !== 'none' && (
+            <div className="text-xs text-[#6B7280] mb-2">
+              {filteredNotes.length} result{filteredNotes.length !== 1 ? 's' : ''}
+            </div>
+          )}
+          
+          <div className="space-y-1 max-h-[500px] overflow-y-auto">
+            {filteredNotes.length === 0 ? (
               <div className="text-center py-5 text-xs text-[#6B7280]">
-                No notes yet
+                {searchMode !== 'none' ? 'No notes found' : 'No notes yet'}
               </div>
             ) : (
-              notes.map(note => {
+              filteredNotes.map(note => {
                 const noteDate = new Date(note.date + 'T00:00:00')
                 const isNoteToday = note.date === getTodayDate()
                 const isActive = note.date === currentDate
