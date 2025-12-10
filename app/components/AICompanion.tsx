@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { HelpCircle, X } from 'lucide-react'
+import MarkdownPreview from './MarkdownPreview' // ← Import this
 
 interface AICompanionProps {
   open: boolean
@@ -99,13 +100,19 @@ export default function AICompanion({ open, onOpenChange }: AICompanionProps) {
                   {msg.role === 'user' ? 'You' : 'AI Companion'}
                 </div>
                 <div className={`
-                  p-3 rounded-lg text-[13px] leading-relaxed whitespace-pre-wrap
+                  rounded-lg text-[13px] leading-relaxed
                   ${msg.role === 'user' 
-                    ? 'bg-[#F9FAFB] border border-[#E5E7EB]' 
-                    : 'bg-white border border-[#F97315]'
+                    ? 'bg-[#F9FAFB] border border-[#E5E7EB] p-3' 
+                    : 'bg-white border border-[#F97315] p-4'
                   }
                 `}>
-                  {msg.content}
+                  {msg.role === 'user' ? (
+                    // User messages: plain text
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                  ) : (
+                    // AI messages: render as Markdown ✨
+                    <MarkdownPreview content={msg.content} />
+                  )}
                 </div>
               </div>
             ))

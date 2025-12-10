@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -31,12 +31,17 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
   const [saveTimeout, setSaveTimeoutState] = useState<NodeJS.Timeout | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [searchMode, setSearchMode] = useState<'none' | 'client' | 'server'>('none')
-
+  
+  const previousDate = useRef(currentDate)
   const isToday = currentDate === getTodayDate()
 
+  // Load note content when switching dates (not on notes refresh)
   useEffect(() => {
-    const note = notes.find(n => n.date === currentDate)
-    setContent(note?.content || '')
+    if (previousDate.current !== currentDate) {
+      const note = notes.find(n => n.date === currentDate)
+      setContent(note?.content || '')
+      previousDate.current = currentDate
+    }
   }, [currentDate, notes])
 
   // Client-side instant filtering
@@ -64,7 +69,7 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
       return
     }
 
-    // For longer queries, use server search with loading state
+    // For longer queries, use server search with full-text search
     setSearchMode('server')
     setIsSearching(true)
     
@@ -78,7 +83,7 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
     } finally {
       setIsSearching(false)
     }
-  }, [notes, filterNotesLocally])
+  }, [filterNotesLocally])
 
   const handleClearSearch = useCallback(() => {
     setSearchMode('none')
@@ -86,6 +91,7 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
     setFilteredNotes(notes)
   }, [notes])
 
+  // Auto-save with debouncing
   const handleContentChange = (value: string) => {
     setContent(value)
     
@@ -99,12 +105,44 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
         await saveNote(currentDate, value)
         setSaveStatus('saved')
         
-        const updatedNotes = await getNotes()
-        setNotes(updatedNotes)
+        // Update notes state locally (avoid refetch to prevent content reset)
+        setNotes(prev => {
+          const index = prev.findIndex(n => n.date === currentDate)
+          if (index >= 0) {
+            const updated = [...prev]
+            updated[index] = { 
+              ...updated[index], 
+              content: value, 
+              updated_at: new Date().toISOString() 
+            }
+            return updated
+          } else {
+            return [...prev, {
+              id: crypto.randomUUID(),
+              user_id: '',
+              date: currentDate,
+              content: value,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }]
+          }
+        })
         
         // Update filtered notes only if not actively searching
         if (searchMode === 'none') {
-          setFilteredNotes(updatedNotes)
+          setFilteredNotes(prev => {
+            const index = prev.findIndex(n => n.date === currentDate)
+            if (index >= 0) {
+              const updated = [...prev]
+              updated[index] = { 
+                ...updated[index], 
+                content: value, 
+                updated_at: new Date().toISOString() 
+              }
+              return updated
+            }
+            return prev
+          })
         }
       } catch (error) {
         console.error('Save error:', error)
@@ -187,13 +225,16 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
         {/* Main Content */}
         <Card className="flex-1 p-8 flex flex-col min-h-[600px]">
           {/* Header */}
-          <div className="mb-8">
-            <div className="text-2xl font-light tracking-tight text-[#101827]">
-              SMART NOTES
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <div className="text-2xl font-light tracking-tight text-[#101827]">
+                SMART NOTES
+              </div>
+              <div className="text-xs font-normal tracking-widest text-[#6B7280] uppercase mt-1">
+                AI-Powered • Knowledge Base
+              </div>
             </div>
-            <div className="text-xs font-normal tracking-widest text-[#6B7280] uppercase mt-1">
-              AI-Powered • Knowledge Base
-            </div>
+            
           </div>
 
           {/* Date Header */}
@@ -219,10 +260,10 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
             disabled={!isToday}
             placeholder={
               isToday 
-                ? "Start typing your notes for today...\n\nThis could be meeting notes, technical decisions, ideas, or anything you want to remember."
+                ? "Start typing your notes for today..."
                 : "This is a past note (read-only)"
             }
-            className="flex-1 resize-none text-sm leading-relaxed border-[#E5E7EB] rounded-xl focus:border-[#F97315] focus:ring-[3px] focus:ring-[#F9731526] disabled:bg-[#F9FAFB] disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex-1 resize-none text-sm leading-relaxed border-[#E5E7EB] rounded-xl focus:border-[#F97315] focus:ring-[3px] focus:ring-[#F9731526] disabled:bg-[#F9FAFB] disabled:cursor-not-allowed disabled:opacity-70 font-mono"
           />
 
           {/* Footer */}
