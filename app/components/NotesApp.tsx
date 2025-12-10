@@ -32,7 +32,7 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
   const [isSearching, setIsSearching] = useState(false)
   const [searchMode, setSearchMode] = useState<'none' | 'client' | 'server'>('none')
   
-  const previousDate = useRef(currentDate)
+  const previousDate = useRef<string | null>(null)
   const isToday = currentDate === getTodayDate()
 
   // Load note content when switching dates (not on notes refresh)
@@ -296,7 +296,7 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
 }
 
 function getTodayDate() {
-  return new Date().toISOString().split('T')[0]
+  return new Date().toLocaleDateString('en-CA')
 }
 
 function formatDateDisplay(dateStr: string) {
