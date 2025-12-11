@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
-  const { question } = await request.json()
+  const { question, conversationHistory = [] } = await request.json()
   
   const cookieStore = await cookies()
   const supabase = createClient(cookieStore)
@@ -29,6 +29,33 @@ export async function POST(request: Request) {
     `Date: ${note.date}\nContent:\n${note.content}`
   ).join('\n\n---\n\n')
 
+  // Build messages array with conversation context
+  const messages = [
+    // System context - provide notes once at the start
+    {
+      role: 'user',
+      content: `You are a helpful AI assistant that helps users search through and understand their notes. Here are all the user's notes:
+
+${notesContext}
+
+Use these notes to answer questions. If you reference specific information, mention which date it came from. If the answer isn't in the notes, let them know politely.`
+    },
+    {
+      role: 'assistant',
+      content: 'I understand. I have access to your notes and will use them to answer your questions, referencing specific dates when relevant.'
+    },
+    // Add conversation history (previous messages)
+    ...conversationHistory.map((msg: { role: string; content: string }) => ({
+      role: msg.role,
+      content: msg.content
+    })),
+    // Current question
+    {
+      role: 'user',
+      content: question
+    }
+  ]
+
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -39,16 +66,7 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
-      messages: [{
-        role: 'user',
-        content: `You are a helpful AI assistant that helps users search through and understand their notes. Here are all the user's notes:
-
-${notesContext}
-
-User's question: ${question}
-
-Please answer the user's question based on their notes. If you reference specific information, mention which date it came from. If the answer isn't in the notes, let them know politely.`
-      }]
+      messages
     })
   })
 
