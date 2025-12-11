@@ -151,7 +151,3 @@ smart-notes/
 ├── utils/supabase/         # Supabase client setup
 └── middleware.ts           # Auth middleware
 ```
-
-## License
-
-MIT
