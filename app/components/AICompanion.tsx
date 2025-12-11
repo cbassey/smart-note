@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { HelpCircle, X } from 'lucide-react'
-import MarkdownPreview from './MarkdownPreview' // ← Import this
+import MarkdownPreview from './MarkdownPreview'
 
 interface AICompanionProps {
   open: boolean
@@ -29,18 +29,25 @@ export default function AICompanion({ open, onOpenChange }: AICompanionProps) {
     setInput('')
     setLoading(true)
 
+    // Add user message immediately
     setMessages(prev => [...prev, { role: 'user', content: question }])
+    
+    // Add placeholder assistant message
     setMessages(prev => [...prev, { role: 'assistant', content: 'Searching through your notes...' }])
 
     try {
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question })
+        body: JSON.stringify({ 
+          question,
+          conversationHistory: messages  // Send full conversation history
+        })
       })
 
       const data = await response.json()
       
+      // Replace placeholder with actual response
       setMessages(prev => {
         const updated = [...prev]
         updated[updated.length - 1] = { role: 'assistant', content: data.answer }
