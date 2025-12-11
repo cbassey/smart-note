@@ -151,3 +151,7 @@ smart-notes/
 ├── utils/supabase/         # Supabase client setup
 └── middleware.ts           # Auth middleware
 ```
+
+## Docs
+
+- [React Native Migration Guide](docs/react-native-migration-guide.md)
