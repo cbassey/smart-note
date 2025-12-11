@@ -1,36 +1,157 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smart Notes
 
-## Getting Started
+A daily note-taking app with AI-powered search and Q&A. Write notes each day, search through your history, and ask an AI companion questions about your notes.
 
-First, run the development server:
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Daily Notes** | One note per day, auto-saved as you type |
+| **Note History** | Browse and view past notes (read-only) |
+| **Hybrid Search** | Instant client-side search + PostgreSQL full-text search |
+| **AI Companion** | Ask questions about your notes using natural language |
+| **Auth** | Supabase authentication (email/password, OAuth) |
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Database**: Supabase (PostgreSQL)
+- **Auth**: Supabase Auth
+- **Styling**: Tailwind CSS
+- **UI Components**: Radix UI + shadcn/ui
+
+## Quick Start
+
+### 1. Clone and Install
+
+```bash
+git clone <your-repo-url>
+cd smart-notes
+npm install
+```
+
+### 2. Set Up Supabase
+
+Create a project at [supabase.com](https://supabase.com) and run this SQL:
+
+```sql
+-- Enable UUID extension
+create extension if not exists "uuid-ossp";
+
+-- Notes table
+create table notes (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) not null,
+  date date not null,
+  content text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  search_vector tsvector generated always as (
+    setweight(to_tsvector('english', coalesce(content, '')), 'A')
+  ) stored,
+  unique(user_id, date)
+);
+
+-- Search function
+create or replace function search_notes(search_query text, user_uuid uuid)
+returns table (
+  id uuid,
+  user_id uuid,
+  date date,
+  content text,
+  created_at timestamptz,
+  updated_at timestamptz,
+  rank real
+) language plpgsql as $$
+begin
+  return query
+  select 
+    notes.id,
+    notes.user_id,
+    notes.date,
+    notes.content,
+    notes.created_at,
+    notes.updated_at,
+    ts_rank(search_vector, websearch_to_tsquery('english', search_query)) as rank
+  from notes
+  where 
+    notes.user_id = user_uuid
+    and search_vector @@ websearch_to_tsquery('english', search_query)
+  order by rank desc, date desc;
+end;
+$$;
+
+-- Enable RLS
+alter table notes enable row level security;
+
+-- RLS policies
+create policy "Users can read own notes"
+  on notes for select using (auth.uid() = user_id);
+
+create policy "Users can insert own notes"
+  on notes for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own notes"
+  on notes for update using (auth.uid() = user_id);
+```
+
+### 3. Environment Variables
+
+Create `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_ANTHROPIC_API_KEY=your_anthropic_key  # For AI companion (Claude)
+```
+
+Get your Anthropic API key at [console.anthropic.com](https://console.anthropic.com)
+
+### 4. Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How It Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Auto-Save
+Notes auto-save 500ms after you stop typing. The save indicator shows status.
 
-## Learn More
+### Search
+- **Short queries (<5 chars)**: Instant client-side filtering
+- **Longer queries**: PostgreSQL full-text search with relevance ranking
 
-To learn more about Next.js, take a look at the following resources:
+### AI Companion
+Click the chat button to ask questions like:
+- "What did I discuss in last week's meeting?"
+- "Why did we decide to use Redis?"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The AI reads all your notes and answers based on their content.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+smart-notes/
+├── app/
+│   ├── actions/
+│   │   └── notes.ts        # Server actions (save, get, search)
+│   ├── api/
+│   │   └── ai/route.ts     # AI companion endpoint
+│   ├── components/
+│   │   ├── NotesApp.tsx    # Main app component
+│   │   ├── SearchBar.tsx   # Search input
+│   │   └── AICompanion.tsx # AI chat dialog
+│   ├── login/
+│   │   └── page.tsx        # Auth page
+│   └── page.tsx            # Home (redirects or shows app)
+├── components/ui/          # shadcn/ui components
+├── utils/supabase/         # Supabase client setup
+└── middleware.ts           # Auth middleware
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
