@@ -99,7 +99,8 @@ export default function AICompanion({ open, onOpenChange }: AICompanionProps) {
       setDailyChats(prev => ({ ...prev, currentSessionId: null }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, dailyChats.currentSessionId]) // Only re-run on dialog open or session switch
+  }, [open]) // Intentionally only [open]: we check staleness on dialog open, not on session switch.
+             // If user explicitly selects an old conversation, they should see it regardless of staleness.
 
   // Helper functions
   function getTodayDate() {
