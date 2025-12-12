@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { toast } from 'sonner'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -32,7 +33,15 @@ export default function Login() {
         })
         
         if (error) throw error
-        setMessage('Check your email to confirm your account!')
+        const successMessage = 'Check your email to confirm your account!'
+        setMessage(successMessage)
+        toast.success(successMessage, {
+          style: {
+            background: '#F0FDF4',
+            border: '1px solid #86EFAC',
+            color: '#166534',
+          },
+        })
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -40,11 +49,25 @@ export default function Login() {
         })
         
         if (error) throw error
+        toast.success('Welcome back!', {
+          style: {
+            background: '#F0FDF4',
+            border: '1px solid #86EFAC',
+            color: '#166534',
+          },
+        })
         router.push('/')
         router.refresh()
       }
     } catch (error: any) {
       setMessage(error.message)
+      toast.error(error.message, {
+        style: {
+          background: '#FEF2F2',
+          border: '1px solid #FCA5A5',
+          color: '#991B1B',
+        },
+      })
     } finally {
       setLoading(false)
     }
