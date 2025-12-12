@@ -118,14 +118,14 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
             }
             return updated
           } else {
-            return [...prev, {
+            return [{
               id: crypto.randomUUID(),
               user_id: '',
               date: currentDate,
               content: value,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
-            }]
+            }, ...prev]
           }
         })
         
@@ -141,8 +141,16 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
                 updated_at: new Date().toISOString() 
               }
               return updated
+            } else {
+              return [{
+                id: crypto.randomUUID(),
+                user_id: '',
+                date: currentDate,
+                content: value,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }, ...prev]
             }
-            return prev
           })
         }
       } catch (error) {
