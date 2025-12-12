@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { HelpCircle, X, Trash2, MessageSquarePlus } from 'lucide-react'
+import { toast } from 'sonner'
 import MarkdownPreview from './MarkdownPreview'
 
 interface AICompanionProps {
@@ -97,7 +98,8 @@ export default function AICompanion({ open, onOpenChange }: AICompanionProps) {
     if (shouldCreateNewSession(session)) {
       setDailyChats(prev => ({ ...prev, currentSessionId: null }))
     }
-  }, [open])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, dailyChats.currentSessionId]) // Only re-run on dialog open or session switch
 
   // Helper functions
   function getTodayDate() {
@@ -176,6 +178,14 @@ export default function AICompanion({ open, onOpenChange }: AICompanionProps) {
       currentSessionId: newCurrentId,
       sessions: updatedSessions
     })
+    
+    toast.success('Conversation deleted', {
+      style: {
+        background: '#F0FDF4',
+        border: '1px solid #86EFAC',
+        color: '#166534',
+      },
+    })
   }
 
   const handleSend = async () => {
@@ -187,10 +197,12 @@ export default function AICompanion({ open, onOpenChange }: AICompanionProps) {
 
     // If no current session, create one
     let activeSessionId: string
+    let conversationHistory: Message[] = []
     
     if (!dailyChats.currentSessionId) {
       activeSessionId = generateSessionId()
       const newSession = createNewSession(activeSessionId)
+      conversationHistory = [] // New session has no history
       
       setDailyChats(prev => ({
         ...prev,
@@ -205,6 +217,8 @@ export default function AICompanion({ open, onOpenChange }: AICompanionProps) {
       await new Promise(resolve => setTimeout(resolve, 0))
     } else {
       activeSessionId = dailyChats.currentSessionId
+      // Get history from current session
+      conversationHistory = dailyChats.sessions[activeSessionId].messages
     }
 
     // Add user message
@@ -230,16 +244,18 @@ export default function AICompanion({ open, onOpenChange }: AICompanionProps) {
     })
 
     try {
-      const conversationHistory = currentSession ? currentSession.messages : []
-      
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           question,
-          conversationHistory
+          conversationHistory // Use the history we captured earlier
         })
       })
+
+      if (!response.ok) {  // Check status code
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
 
       const data = await response.json()
       
@@ -266,6 +282,14 @@ export default function AICompanion({ open, onOpenChange }: AICompanionProps) {
       })
     } catch (error) {
       console.error('AI error:', error)
+      toast.error('Could not reach AI', {
+        description: 'Please try again',
+        style: {
+          background: '#FEF2F2',
+          border: '1px solid #FCA5A5',
+          color: '#991B1B',
+        },
+      })
       
       // Replace placeholder with error message
       setDailyChats(prev => {

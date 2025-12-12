@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { saveNote, getNotes, searchNotes } from '@/app/actions/notes'
 import { MessageCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import AICompanion from './AICompanion'
 import SearchBar from './SearchBar'
 
@@ -147,6 +148,14 @@ export default function NotesApp({ initialNotes }: NotesAppProps) {
       } catch (error) {
         console.error('Save error:', error)
         setSaveStatus('error')
+        toast.error('Failed to save note', {
+          description: 'Check your connection and try again',
+          style: {
+            background: '#FEF2F2',
+            border: '1px solid #FCA5A5',
+            color: '#991B1B',
+          },
+        })
       }
     }, 500)
     
