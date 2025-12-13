@@ -75,6 +75,15 @@ export default function NotesApp({ initialNotes, user }: NotesAppProps) {
     }
   }, [currentDate, notes])
 
+  // Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout)
+      }
+    }
+  }, [saveTimeout])
+
   // Client-side instant filtering
   const filterNotesLocally = useCallback(
     (query: string) => {
