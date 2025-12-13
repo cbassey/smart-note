@@ -20,5 +20,13 @@ export default async function Page() {
     .eq('user_id', user.id)
     .order('date', { ascending: false })
 
-  return <NotesApp initialNotes={notes || []} />
+  return (
+    <NotesApp 
+      initialNotes={notes || []} 
+      user={{ 
+        email: user.email || 'user@example.com',
+        id: user.id 
+      }} 
+    />
+  )
 }
