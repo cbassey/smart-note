@@ -49,8 +49,7 @@ export function NavUser({ user }: NavUserProps) {
         },
       })
       
-      router.push('/login')
-      router.refresh()
+      await router.push('/login')
     } catch (error: any) {
       toast.error('Failed to log out', {
         description: error.message,
