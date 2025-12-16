@@ -52,9 +52,9 @@ export default function AppSidebar({
   user,
 }: AppSidebarProps) {
   return (
-    <Sidebar variant="inset" className="border-r border-[#E5E7EB]">
+    <Sidebar variant="inset" className="border-r-0">
       {/* Header */}
-      <SidebarHeader className="border-b border-[#E5E7EB] bg-white">
+      <SidebarHeader className="border-b-0">
         <div className="flex items-center gap-2 px-4 py-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F97315]">
             <Calendar className="h-4 w-4 text-white" />
@@ -71,7 +71,7 @@ export default function AppSidebar({
       </SidebarHeader>
 
       {/* Content */}
-      <SidebarContent className="bg-[#F9FAFB]">
+      <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             {/* Search Bar */}
@@ -108,23 +108,17 @@ export default function AppSidebar({
                         onClick={() => onDateSelect(note.date)}
                         isActive={isActive}
                         className={`
-                          h-auto py-3 transition-all
+                          h-auto py-3 transition-all rounded-lg
                           ${
                             isActive
-                              ? 'bg-[#F97315] text-white hover:bg-[#EA580C] hover:text-white'
-                              : isNoteToday
-                              ? 'border border-[#F97315] bg-white hover:bg-[#F9FAFB]'
-                              : 'border border-[#E5E7EB] bg-white hover:border-[#F97315] hover:bg-[#F9FAFB]'
+                              ? 'bg-[#FFF4ED] text-[#101827] hover:bg-[#FFEDD5] shadow-sm'
+                              : 'bg-card hover:bg-[#F9FAFB] shadow-sm'
                           }
                         `}
                       >
                         <div className="flex w-full flex-col items-start gap-1">
                           <div className="flex w-full items-center justify-between">
-                            <span
-                              className={`text-[13px] font-medium ${
-                                isActive ? 'text-white' : 'text-[#101827]'
-                              }`}
-                            >
+                            <span className="text-[13px] font-medium text-[#101827]">
                               {noteDate.toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
@@ -132,16 +126,12 @@ export default function AppSidebar({
                               })}
                             </span>
                             {isNoteToday && !isActive && (
-                              <span className="rounded bg-[#F97315] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
+                              <span className="rounded-full bg-[#F97315] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
                                 Today
                               </span>
                             )}
                           </div>
-                          <span
-                            className={`line-clamp-1 text-left text-[11px] ${
-                              isActive ? 'text-white' : 'text-[#6B7280]'
-                            }`}
-                          >
+                          <span className="line-clamp-1 text-left text-[11px] text-[#6B7280]">
                             {note.content.substring(0, 50) || 'Empty note'}
                           </span>
                         </div>
@@ -156,7 +146,7 @@ export default function AppSidebar({
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter className="border-t border-[#E5E7EB] bg-white">
+      <SidebarFooter>
         <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
