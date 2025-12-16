@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { saveNote, searchNotes } from '@/app/actions/notes'
 import { MessageCircle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -241,38 +240,38 @@ export default function NotesApp({ initialNotes, user }: NotesAppProps) {
       />
       <SidebarInset>
         {/* Header */}
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[#E5E7EB] bg-white">
-          <div className="flex items-center gap-2 px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#E5E7EB]/30 px-4">
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 h-4"
-            />
-            <div className="text-sm font-medium text-[#101827]">
-              {formatDateDisplay(currentDate)}
-            </div>
-            {isToday && (
-              <div className="ml-auto flex items-center gap-2 text-[11px] uppercase tracking-wide text-[#6B7280]">
-                <div
-                  className={`
+          </div>
+          
+          {/* Date - Centered */}
+          <div className="absolute left-1/2 -translate-x-1/2 text-sm font-medium text-[#101827]">
+            {formatDateDisplay(currentDate)}
+          </div>
+          
+          {/* Save Status - Right */}
+          {isToday && (
+            <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-[#6B7280]">
+              <div
+                className={`
                   h-1.5 w-1.5 rounded-full transition-all
                   ${
                     saveStatus === 'saving'
                       ? 'bg-[#F97315] shadow-[0_0_8px_#F97315]'
-                      : 'bg-[#6B7280]'
+                      : 'bg-[#10B981]'
                   }
                 `}
-                />
-                <span>
-                  {saveStatus === 'saving'
-                    ? 'Saving...'
-                    : saveStatus === 'error'
-                    ? 'Error'
-                    : 'Saved'}
-                </span>
-              </div>
-            )}
-          </div>
+              />
+              <span>
+                {saveStatus === 'saving'
+                  ? 'Saving...'
+                  : saveStatus === 'error'
+                  ? 'Error'
+                  : 'Saved'}
+              </span>
+            </div>
+          )}
         </header>
 
         {/* Main Content */}
@@ -286,11 +285,11 @@ export default function NotesApp({ initialNotes, user }: NotesAppProps) {
                 ? 'Start typing your notes for today...'
                 : 'This is a past note (read-only)'
             }
-            className="min-h-[calc(100vh-12rem)] resize-none border-[#E5E7EB] font-mono text-sm leading-relaxed focus:border-[#F97315] focus:ring-[3px] focus:ring-[#F9731526] disabled:cursor-not-allowed disabled:bg-[#F9FAFB] disabled:opacity-70"
+            className="min-h-[calc(100vh-12rem)] resize-none border-0 font-mono text-sm leading-relaxed shadow-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:bg-[#FAFAFA] disabled:opacity-70"
           />
 
           {/* Footer */}
-          <div className="flex items-center justify-between border-t border-[#E5E7EB] pt-4">
+          <div className="flex items-center justify-between border-t border-[#E5E7EB]/30 pt-4">
             <div className="text-[11px] uppercase tracking-wide text-[#6B7280]">
               {wordCount} word{wordCount !== 1 ? 's' : ''}
             </div>
