@@ -125,7 +125,7 @@ export default function AppSidebar({
                                 year: 'numeric',
                               })}
                             </span>
-                            {isNoteToday && (
+                            {isNoteToday && !isActive && (
                               <span className="rounded-full bg-[#F97315] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
                                 Today
                               </span>
